@@ -294,6 +294,7 @@ Images, icons, and design resources used by the interface.
 
 # 🚀 Running the Project Locally
 
+```
 Clone the repository
 
 git clone https://github.com/yourusername/neptune-crypto-lab.git
@@ -314,8 +315,8 @@ Start the development server
 'npm run dev'
 
 
-The application will run at: localhost
-
+The application will run at: localhost:5173/
+```
 
 ---
 
