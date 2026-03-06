@@ -95,7 +95,17 @@ export default function Index() {
         break;
       case "sha256":
         result = await sha256Hash(input);
-        setSteps([]);
+        // Build SHA-256 visualization: show each input char → its hex byte pair in the hash
+        {
+          const hashResult = result;
+          const chars = input.split('').slice(0, 30);
+          const hexPairs = hashResult.match(/.{2}/g) || [];
+          setSteps(chars.map((ch, i) => ({
+            original: ch,
+            shifted: hexPairs[i % hexPairs.length] || '--',
+            type: 'sha256',
+          })));
+        }
         break;
       case "hmac":
         if (!key) { setOutput("Enter a key..."); setSteps([]); return; }
@@ -306,6 +316,11 @@ export default function Index() {
                     {"keyChar" in step && (
                       <div className="text-[10px] text-muted-foreground mt-1 font-mono">
                         key: {step.keyChar}
+                      </div>
+                    )}
+                    {step.type === "sha256" && (
+                      <div className="text-[10px] text-muted-foreground mt-1 font-mono">
+                        hex byte
                       </div>
                     )}
                   </div>
