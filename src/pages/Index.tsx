@@ -151,7 +151,7 @@ export default function Index() {
                 <div className="w-4 h-4 rounded-sm bg-primary/60" />
               </div>
             </div>
-            <h1 className="text-4xl sm:text-5xl font-bold tracking-wider text-primary text-glow font-mono">
+            <h1 className="text-4xl sm:text-5xl font-bold tracking-wider text-primary text-glow font-mono animate-pulse-glow">
               NEPTUNE
             </h1>
           </div>
