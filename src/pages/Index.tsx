@@ -33,6 +33,17 @@ export default function Index() {
   const [rsaKeys, setRsaKeys] = useState<{ publicKey: string; privateKey: string } | null>(null);
   const [copied, setCopied] = useState(false);
   const [steps, setSteps] = useState<any[]>([]);
+  const [verifyMessage, setVerifyMessage] = useState("");
+  const [verifyHash, setVerifyHash] = useState("");
+  const [verifyResult, setVerifyResult] = useState<boolean | null>(null);
+  const [attackMode, setAttackMode] = useState(false);
+  const [attackPassword, setAttackPassword] = useState("");
+
+  const handleVerifyIntegrity = async () => {
+    if (!verifyMessage || !verifyHash) return;
+    const computed = await sha256Hash(verifyMessage);
+    setVerifyResult(computed.toLowerCase().trim() === verifyHash.toLowerCase().trim());
+  };
 
   // Prevent copy
   useEffect(() => {
@@ -328,6 +339,213 @@ export default function Index() {
               <p className="text-sm text-muted-foreground mt-1">{info.desc}</p>
             </div>
           </div>
+        </div>
+
+        {/* Integrity Verification Tool */}
+        <div className="glass rounded-xl p-5 gradient-border mb-6 animate-fade-in-up" style={{ animationDelay: "0.35s" }}>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-primary">🧬</span>
+            <span className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">
+              Integrity Verification Tool
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground mb-4">
+            Paste a message and its SHA-256 hash to verify integrity. If the message has been tampered with, a red alert will trigger.
+          </p>
+          <div className="grid md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="text-xs text-muted-foreground font-semibold tracking-wider uppercase mb-1 block">Original Message</label>
+              <textarea
+                value={verifyMessage}
+                onChange={(e) => setVerifyMessage(e.target.value)}
+                placeholder="Paste original message..."
+                className="w-full h-24 bg-secondary/50 rounded-lg p-3 text-sm font-mono text-foreground placeholder:text-muted-foreground resize-none border border-border focus:border-primary focus:outline-none transition-colors"
+                style={{ userSelect: "text" }}
+              />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground font-semibold tracking-wider uppercase mb-1 block">Expected Hash (SHA-256)</label>
+              <textarea
+                value={verifyHash}
+                onChange={(e) => setVerifyHash(e.target.value)}
+                placeholder="Paste expected SHA-256 hash..."
+                className="w-full h-24 bg-secondary/50 rounded-lg p-3 text-sm font-mono text-foreground placeholder:text-muted-foreground resize-none border border-border focus:border-primary focus:outline-none transition-colors"
+                style={{ userSelect: "text" }}
+              />
+            </div>
+          </div>
+          <button
+            onClick={handleVerifyIntegrity}
+            className="px-5 py-2.5 rounded-lg text-sm font-semibold bg-primary/15 border border-primary text-primary hover:bg-primary/25 transition-all"
+          >
+            🔍 Verify Integrity
+          </button>
+          {verifyResult !== null && (
+            <div
+              className={`mt-4 p-4 rounded-lg border text-sm font-semibold text-center transition-all ${
+                verifyResult
+                  ? "border-green-500/50 bg-green-500/10 text-green-400"
+                  : "border-red-500/50 bg-red-500/10 text-red-400 animate-tamper-alert"
+              }`}
+            >
+              {verifyResult
+                ? "✅ INTEGRITY VERIFIED — Message matches the hash."
+                : "🚨 TAMPERED — Hash does NOT match the message!"}
+            </div>
+          )}
+        </div>
+
+        {/* Attack Simulation Mode */}
+        <div className="glass rounded-xl p-5 gradient-border mb-6 animate-fade-in-up" style={{ animationDelay: "0.4s" }}>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <span className="text-primary">🛡</span>
+              <span className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">
+                Attack Simulation Mode
+              </span>
+            </div>
+            <button
+              onClick={() => setAttackMode(!attackMode)}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-300 border ${
+                attackMode
+                  ? "bg-red-500/15 border-red-500/50 text-red-400"
+                  : "border-border text-muted-foreground hover:border-primary/40"
+              }`}
+            >
+              {attackMode ? "⚠️ Active" : "Enable"}
+            </button>
+          </div>
+          {!attackMode ? (
+            <p className="text-sm text-muted-foreground text-center py-4 italic">
+              Enable to see how ciphers can be attacked and estimated crack times
+            </p>
+          ) : (
+            <div className="space-y-5">
+              {/* Caesar Frequency Analysis */}
+              <div>
+                <h4 className="text-xs font-semibold tracking-wider uppercase text-muted-foreground mb-3">
+                  Caesar Cipher — Frequency Analysis Attack
+                </h4>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Caesar cipher can be trivially broken by trying all 25 possible shifts or analyzing letter frequency.
+                </p>
+                {input && cipher === "caesar" ? (
+                  <div className="overflow-x-auto">
+                    <div className="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-9 gap-1.5">
+                      {Array.from({ length: 25 }, (_, i) => i + 1).map((s) => {
+                        const attempt = caesarDecrypt(output || caesarEncrypt(input, shift), s);
+                        const isCorrect = s === shift && mode === "encrypt";
+                        return (
+                          <div
+                            key={s}
+                            className={`bg-secondary/50 rounded-lg p-2 border text-center transition-all ${
+                              isCorrect
+                                ? "border-green-500/50 bg-green-500/10"
+                                : "border-border"
+                            }`}
+                          >
+                            <div className="text-[10px] text-muted-foreground mb-0.5">shift {s}</div>
+                            <div className={`text-xs font-mono truncate ${isCorrect ? "text-green-400 font-bold" : "text-foreground/70"}`}>
+                              {attempt.slice(0, 6)}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      ⚡ All 25 shifts attempted instantly — Caesar is <span className="text-red-400 font-semibold">trivially breakable</span>.
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground italic">
+                    Select Caesar cipher and type a message to see the brute-force attack in action.
+                  </p>
+                )}
+              </div>
+
+              {/* AES Crack Time Estimation */}
+              <div className="border-t border-border pt-5">
+                <h4 className="text-xs font-semibold tracking-wider uppercase text-muted-foreground mb-3">
+                  AES-256 — Password Strength Estimation
+                </h4>
+                <div>
+                  <label className="text-xs text-muted-foreground font-semibold tracking-wider uppercase mb-1 block">
+                    Test Password Strength
+                  </label>
+                  <input
+                    type="text"
+                    value={attackPassword}
+                    onChange={(e) => setAttackPassword(e.target.value)}
+                    placeholder="Enter a password to estimate crack time..."
+                    className="w-full bg-secondary/50 rounded-lg px-3 py-2 text-sm font-mono text-foreground placeholder:text-muted-foreground border border-border focus:border-primary focus:outline-none transition-colors mb-3"
+                    style={{ userSelect: "text" }}
+                  />
+                  {attackPassword && (() => {
+                    const len = attackPassword.length;
+                    const hasLower = /[a-z]/.test(attackPassword);
+                    const hasUpper = /[A-Z]/.test(attackPassword);
+                    const hasDigit = /[0-9]/.test(attackPassword);
+                    const hasSpecial = /[^a-zA-Z0-9]/.test(attackPassword);
+                    let pool = 0;
+                    if (hasLower) pool += 26;
+                    if (hasUpper) pool += 26;
+                    if (hasDigit) pool += 10;
+                    if (hasSpecial) pool += 32;
+                    const entropy = Math.floor(len * Math.log2(pool || 1));
+                    const combinations = Math.pow(pool || 1, len);
+                    const guessesPerSec = 1e12; // 1 trillion guesses/sec
+                    const seconds = combinations / guessesPerSec;
+                    let timeStr = "";
+                    if (seconds < 1) timeStr = "< 1 second";
+                    else if (seconds < 60) timeStr = `${Math.ceil(seconds)} seconds`;
+                    else if (seconds < 3600) timeStr = `${Math.ceil(seconds / 60)} minutes`;
+                    else if (seconds < 86400) timeStr = `${Math.ceil(seconds / 3600)} hours`;
+                    else if (seconds < 31536000) timeStr = `${Math.ceil(seconds / 86400)} days`;
+                    else if (seconds < 31536000 * 1e6) timeStr = `${(seconds / 31536000).toFixed(1)} years`;
+                    else timeStr = `${(seconds / 31536000).toExponential(2)} years`;
+
+                    const strength = entropy < 28 ? { label: "Very Weak", color: "text-red-400", bar: 15 }
+                      : entropy < 36 ? { label: "Weak", color: "text-orange-400", bar: 30 }
+                      : entropy < 60 ? { label: "Moderate", color: "text-yellow-400", bar: 55 }
+                      : entropy < 80 ? { label: "Strong", color: "text-green-400", bar: 75 }
+                      : { label: "Very Strong", color: "text-primary", bar: 95 };
+
+                    return (
+                      <div className="space-y-3">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">Strength</span>
+                          <span className={`font-semibold ${strength.color}`}>{strength.label}</span>
+                        </div>
+                        <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{
+                              width: `${strength.bar}%`,
+                              background: `linear-gradient(90deg, hsl(0,80%,50%), hsl(${Math.min(entropy * 2, 174)}, 100%, 50%))`,
+                            }}
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 text-xs">
+                          <div className="bg-secondary/50 rounded-lg p-2 border border-border">
+                            <span className="text-muted-foreground">Entropy: </span>
+                            <span className="text-foreground font-mono">{entropy} bits</span>
+                          </div>
+                          <div className="bg-secondary/50 rounded-lg p-2 border border-border">
+                            <span className="text-muted-foreground">Pool: </span>
+                            <span className="text-foreground font-mono">{pool} chars</span>
+                          </div>
+                          <div className="bg-secondary/50 rounded-lg p-2 border border-border col-span-2">
+                            <span className="text-muted-foreground">Est. crack time (1T guesses/sec): </span>
+                            <span className={`font-mono font-semibold ${strength.color}`}>{timeStr}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
