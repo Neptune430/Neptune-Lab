@@ -33,6 +33,17 @@ export default function Index() {
   const [rsaKeys, setRsaKeys] = useState<{ publicKey: string; privateKey: string } | null>(null);
   const [copied, setCopied] = useState(false);
   const [steps, setSteps] = useState<any[]>([]);
+  const [verifyMessage, setVerifyMessage] = useState("");
+  const [verifyHash, setVerifyHash] = useState("");
+  const [verifyResult, setVerifyResult] = useState<boolean | null>(null);
+  const [attackMode, setAttackMode] = useState(false);
+  const [attackPassword, setAttackPassword] = useState("");
+
+  const handleVerifyIntegrity = async () => {
+    if (!verifyMessage || !verifyHash) return;
+    const computed = await sha256Hash(verifyMessage);
+    setVerifyResult(computed.toLowerCase().trim() === verifyHash.toLowerCase().trim());
+  };
 
   // Prevent copy
   useEffect(() => {
